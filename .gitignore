@@ -1,4 +1,3 @@
-deps/
 ebin/
 log/
 erl_crash.dump
