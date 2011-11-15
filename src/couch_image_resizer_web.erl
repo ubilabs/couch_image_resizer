@@ -31,6 +31,7 @@ stop() ->
 
 loop(Req) ->
     RawPath = Req:get(raw_path),
+    Expires = {"Expires", "Fri, 14 Nov 2031 23:59:59 GMT"},
     ContentType = {"Content-Type", "text/plain; charset=utf-8"},
 
     case Req:get(method) of
@@ -57,7 +58,7 @@ loop(Req) ->
             {ok, "200", ResHeaders, Att} ->
                 case get_geometry(Req) of
                 false ->
-                    Req:respond({200, ResHeaders, Att});
+                    Req:respond({200, [Expires | ResHeaders], Att});
                 ambiguous ->
                     Req:respond({400, [ContentType], <<"{\"error\":\"bad_request\",\"reason\":\"resize query paramameter and x-imagemagick-resize header have different values\"}">>});
                 invalid ->
@@ -78,7 +79,7 @@ loop(Req) ->
                             os:cmd("convert -resize '" ++ Size ++ "' '" ++ TmpImgFile ++ "' '" ++ ScaledTmpImgFile ++ "'"),
                             {ok, ScaledAtt} = file:read_file(ScaledTmpImgFile),
                             term_cache_ets:put(?IMAGE_CACHE, Key, ScaledAtt),
-                            Req:respond({200, ResHeaders, ScaledAtt});
+                            Req:respond({200, [Expires | ResHeaders], ScaledAtt});
                         _ ->
                             Req:respond({400, [ContentType], <<"{\"error\":\"bad_request\",\"reason\":\"file is no image\"}">>})
                         end,
@@ -86,7 +87,7 @@ loop(Req) ->
                         file:delete(TmpImgFile),
                         file:delete(ScaledTmpImgFile);
                     {ok, ScaledAtt} ->
-                        Req:respond({200, ResHeaders, ScaledAtt})
+                        Req:respond({200, [Expires | ResHeaders], ScaledAtt})
                     end
 
                 end
